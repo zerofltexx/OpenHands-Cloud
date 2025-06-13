@@ -17,7 +17,7 @@ jobs:
           - name: runtime-api
             path: charts/runtime-api
           - name: image-loader
-            path: charts/image-loader
+            path: charts/image-loader/chart
           - name: openhands
             path: charts/openhands
     
@@ -59,7 +59,7 @@ jobs:
             path: charts/runtime-api
             repository: openhands-cloud-runtime-api
           - name: image-loader
-            path: charts/image-loader
+            path: charts/image-loader/chart
             repository: openhands-cloud-image-loader
           - name: openhands
             path: charts/openhands
