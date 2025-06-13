@@ -9,6 +9,17 @@ This Helm chart deploys the complete OpenHands stack, including all required dep
 - Ingress controller (recommended: Traefik)
 - A TLS solution for certificates (recommended: cert-manager)
 
+## Configuration
+
+See the [values.yaml](values.yaml) file for the full list of configurable parameters.
+Make sure to update all values marked with "REQUIRED" comments.
+
+An [example-values.yaml](example-values.yaml) file is also provided as a starting point
+for your own configuration. This example file contains the minimum set of values you need
+to override when deploying the chart with the default included services
+(without using external data stores). Remember to update the domain names and other
+environment-specific values in the example file before using it.
+
 
 ## Installation
 ### Initial setup
@@ -102,7 +113,7 @@ redis                 Opaque   1      35s
 sandbox-api-key       Opaque   1      3s
 ```
 
-### Install and Set Up OpenHands
+### Install OpenHands
 Now we can install the helm chart.
 
 ```bash
@@ -112,13 +123,10 @@ helm upgrade --install openhands --namespace openhands .
 
 This installation won't complete successfully the first time because we need to set up LiteLLM.
 
-After installing the chart initially you will need a manual step to set up
-LiteLLM.
-
 > [!NOTE]
 > This process will be automated in the near future.
 
-First, port-forward to litellm:
+To set up LiteLLM, first use port-forward to connect:
 
 ```bash
 kubectl port-forward svc/openhands-litellm 4000:4000
@@ -136,15 +144,20 @@ litellm:
   teamId: "<TEAM_ID>"
 ```
 
+### Verify your Setup
 Finally, upgrade the release:
 ```bash
 helm upgrade --install openhands --namespace openhands . -f my-values.yaml
 ```
 
-You should now be able to see OpenHands running with
+You should now be able to see OpenHands running with:
 ```bash
 kubectl port-forward svc/openhands-service 3000:3000
 ```
+
+If you visit `http://localhost:3000` you should see the login screen!
+
+But we're not done yet...
 
 ## Setting up DNS and Ingress
 We recommend traefik as an ingress controller. If you're not using traefik,
@@ -182,9 +195,11 @@ litellm-helm:
 
 ## Enabling GitHub Authentication
 
-The chart includes Keycloak for authentication and supports GitHub OAuth integration. To configure GitHub OAuth:
+You'll need to set up GitHub or GitLab as an auth provider. We're working on email-based
+authentication as well.
 
-Similar instructions apply to GitLab authentication.
+The instructions here are for GitHub, but
+similar instructions apply to GitLab authentication.
 
 1. Create a GitHub OAuth App:
    - Go to your GitHub organization settings or personal settings
@@ -192,24 +207,7 @@ Similar instructions apply to GitLab authentication.
    - Set the "Authorization callback URL" to `https://<your-keycloak-hostname>/realms/<realm-name>/broker/github/endpoint`
    - Note the Client ID and Client Secret provided by GitHub
 
-1. Create a Kubernetes secret for Keycloak realm configuration:
-   ```bash
-   kubectl create secret generic keycloak-realm -n openhands \
-     --from-literal=client-id=allhands \
-     --from-literal=client-secret=<your-keycloak-client-secret> \
-     --from-literal=provider-name=github \
-     --from-literal=realm-name=allhands \
-     --from-literal=server-url=http://keycloak
-   ```
-
-   The secret must contain the following keys:
-   - `client-id`: The Keycloak client ID (not the GitHub OAuth App client ID), set to "allhands"
-   - `client-secret`: The Keycloak client secret (not the GitHub OAuth App client secret)
-   - `provider-name`: Set to "github" for GitHub OAuth integration
-   - `realm-name`: The name of your Keycloak realm, set to "allhands"
-   - `server-url`: The internal Keycloak service URL (typically "http://keycloak")
-
-1. Create a GitHub App secret with the following structure:
+2. Create a GitHub App secret with the following structure:
    This secret contains the GitHub App configuration information from your GitHub account.
    You can create it using kubectl:
    ```bash
@@ -222,12 +220,6 @@ Similar instructions apply to GitLab authentication.
    ```
 
 When the chart is deployed, a job will run to configure the Keycloak realm with GitHub as an identity provider using the credentials you provided.
-
-## Configuration
-
-See the [values.yaml](values.yaml) file for the full list of configurable parameters. Make sure to update all values marked with "REQUIRED" comments.
-
-An [example-values.yaml](example-values.yaml) file is also provided as a starting point for your own configuration. This example file contains the minimum set of values you need to override when deploying the chart with the default included services (without using external data stores). Remember to update the domain names and other environment-specific values in the example file before using it.
 
 ## Using External Services
 
