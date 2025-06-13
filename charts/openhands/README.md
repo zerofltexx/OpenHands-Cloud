@@ -176,9 +176,9 @@ We recommend traefik as an ingress controller. If you're not using traefik,
 you can set ingress.class in the objects below.
 
 You'll also need to point your DNS records to the ingress controller's IP address.
-In this example, we'll use `openhands.example.com` as the main domain.
+In this example, we'll use `openhands.example.com` as the base domain.
 
-First, set up a CNAME record pointing *.openhands.example.com to your ingress
+First, set up a CNAME record pointing `*.openhands.example.com` to your ingress
 controller's IP address.
 
 Next, enable ingress in my-values.yaml:
@@ -216,7 +216,7 @@ similar instructions apply to GitLab authentication.
 1. Create a GitHub OAuth App:
    - Go to your GitHub organization settings or personal settings
    - Navigate to "Developer settings" > "OAuth Apps" > "New OAuth App"
-   - Set the "Authorization callback URL" to `https://<your-keycloak-hostname>/realms/<realm-name>/broker/github/endpoint`
+   - Set the "Authorization callback URL" to `https://auth.openhands.example.com/realms/openhands/broker/github/endpoint`
    - Note the Client ID and Client Secret provided by GitHub
 
 2. Create a GitHub App secret with the following structure:
@@ -233,7 +233,12 @@ similar instructions apply to GitLab authentication.
 
 When the chart is deployed, a job will run to configure the Keycloak realm with GitHub as an identity provider using the credentials you provided.
 
-## Using External Services
+## Hardening
+The above configuration should work well for a POC. However, it uses several in-cluster databases,
+which creates risk of data loss.
+
+We recommend at minimum setting up a more permanent Postgres and S3-compatible file store, e.g.
+using AWS RDS and AWS S3.
 
 ### Bring Your Own PostgreSQL
 
@@ -286,28 +291,6 @@ To use an external PostgreSQL database instead of deploying one with the chart:
        DB_NAME: runtime_api_db
    ```
 
-### Bring Your Own Redis
-
-To use an external Redis instance:
-
-1. Disable the included Redis:
-   ```yaml
-   redis:
-     enabled: false
-   ```
-
-2. Configure the external Redis connection:
-   ```yaml
-   externalRedis:
-     host: your-redis-host
-     port: 6379
-     existingSecret: redis
-
-   # Make sure the secret exists with the correct credentials
-   # kubectl create secret generic redis \
-   #   --from-literal=redis-password=<your-redis-password>
-   ```
-
 ### Bring Your Own S3-Compatible Storage
 
 To use an external S3-compatible storage instead of MinIO:
@@ -332,6 +315,29 @@ To use an external S3-compatible storage instead of MinIO:
    #   --from-literal=access-key=<your-access-key> \
    #   --from-literal=secret-key=<your-secret-key>
    ```
+
+### Bring Your Own Redis
+
+To use an external Redis instance:
+
+1. Disable the included Redis:
+   ```yaml
+   redis:
+     enabled: false
+   ```
+
+2. Configure the external Redis connection:
+   ```yaml
+   externalRedis:
+     host: your-redis-host
+     port: 6379
+     existingSecret: redis
+
+   # Make sure the secret exists with the correct credentials
+   # kubectl create secret generic redis \
+   #   --from-literal=redis-password=<your-redis-password>
+   ```
+
 
 ### Storage Class Configuration
 
