@@ -17,7 +17,7 @@ jobs:
           - name: runtime-api
             path: charts/runtime-api
           - name: image-loader
-            path: charts/image-loader/chart
+            path: charts/image-loader
           - name: openhands
             path: charts/openhands
     
@@ -35,6 +35,9 @@ jobs:
       - name: Test Helm Chart with default values
         run: |
           echo "Testing ${{ matrix.chart.name }} chart with default values"
+          echo "Updating dependencies for ${{ matrix.chart.name }}"
+          helm dependency update ${{ matrix.chart.path }}
+          echo "Running helm template for ${{ matrix.chart.name }}"
           helm template ${{ matrix.chart.path }} --debug
           if [ $? -ne 0 ]; then
             echo "Helm template test failed for ${{ matrix.chart.name }}"
@@ -59,7 +62,7 @@ jobs:
             path: charts/runtime-api
             repository: openhands-cloud-runtime-api
           - name: image-loader
-            path: charts/image-loader/chart
+            path: charts/image-loader
             repository: openhands-cloud-image-loader
           - name: openhands
             path: charts/openhands
@@ -82,6 +85,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update Helm dependencies
+        run: |
+          echo "Updating dependencies for ${{ matrix.chart.name }}"
+          helm dependency update ${{ matrix.chart.path }}
 
       - name: Publish Helm Chart
         uses: appany/helm-oci-chart-releaser@v0.4.2
