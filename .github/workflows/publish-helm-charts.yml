@@ -1,15 +1,25 @@
 name: Helm Charts CI/CD
 
 on:
-  # Run tests on all branches and commits
+  # Run tests on PRs and pushes to main
   push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+      - '.github/workflows/publish-helm-charts.yml'
   pull_request:
-  # Only publish on main branch when charts are modified
+    paths:
+      - 'charts/**'
+      - '.github/workflows/publish-helm-charts.yml'
+  # Manual trigger
   workflow_dispatch:
 
 jobs:
   test-charts:
     runs-on: ubuntu-latest
+    # Skip duplicate runs for PRs (only run on PR, not on the push to the PR branch)
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     
     strategy:
       matrix:
@@ -32,7 +42,7 @@ jobs:
         with:
           version: 'latest'
           
-      - name: Test Helm Chart with default values
+      - name: Test ${{ matrix.chart.name }} chart with default values
         run: |
           echo "Testing ${{ matrix.chart.name }} chart with default values"
           echo "Updating dependencies for ${{ matrix.chart.name }}"
@@ -86,12 +96,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Update Helm dependencies
+      - name: Update ${{ matrix.chart.name }} dependencies
         run: |
           echo "Updating dependencies for ${{ matrix.chart.name }}"
           helm dependency update ${{ matrix.chart.path }}
 
-      - name: Publish Helm Chart
+      - name: Publish ${{ matrix.chart.name }} chart to GHCR
         uses: appany/helm-oci-chart-releaser@v0.4.2
         with:
           name: ${{ matrix.chart.name }}
