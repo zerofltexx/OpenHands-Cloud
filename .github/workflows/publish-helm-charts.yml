@@ -1,14 +1,11 @@
-name: Publish Helm Charts
+name: Helm Charts CI/CD
 
 on:
+  # Run tests on all branches and commits
   push:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
   pull_request:
-    paths:
-      - 'charts/**'
+  # Only publish on main branch when charts are modified
+  workflow_dispatch:
 
 jobs:
   test-charts:
@@ -48,7 +45,9 @@ jobs:
   publish-charts:
     runs-on: ubuntu-latest
     needs: test-charts
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(join(github.event.commits.*.modified, ' '), 'charts/')) || 
+      github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
