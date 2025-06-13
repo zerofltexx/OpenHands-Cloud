@@ -76,13 +76,10 @@ jobs:
         chart:
           - name: runtime-api
             path: charts/runtime-api
-            repository: helm-runtime-api
           - name: image-loader
             path: charts/image-loader
-            repository: helm-image-loader
           - name: openhands
             path: charts/openhands
-            repository: helm-openhands
     
     steps:
       - name: Checkout
@@ -111,7 +108,7 @@ jobs:
         uses: appany/helm-oci-chart-releaser@v0.4.2
         with:
           name: ${{ matrix.chart.name }}
-          repository: ${{ matrix.chart.repository }}
+          repository: helm-charts
           path: ${{ matrix.chart.path }}
           registry: ghcr.io/${{ steps.chart_info.outputs.REPO_OWNER }}
           registry_username: ${{ github.actor }}
