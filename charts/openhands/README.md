@@ -23,92 +23,90 @@ environment-specific values in the example file before using it.
 
 ## Installation
 ### Initial setup
-1. Clone the repository and navigate to the chart directory:
-   ```bash
-   git clone https://github.com/All-Hands-AI/openhands-cloud
-   cd openhands-cloud/charts/openhands
-   ```
+#### 1. Clone the repository
+```bash
+git clone https://github.com/All-Hands-AI/openhands-cloud
+cd openhands-cloud/charts/openhands
+```
 
-2. Create the openhands namespace:
-   ```bash
-   # Create namespace (if you want to use a different namespace, you will need to change it in all the commands that follow)
-   kubectl create namespace openhands
-   ```
+#### 2. Create the openhands namespace
+```bash
+# Create namespace (if you want to use a different namespace, you will need to change it in all the commands that follow)
+kubectl create namespace openhands
+```
 
-3. Create a secret for your LLM.
-  
-  We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
-  ```bash
-  kubectl create secret generic litellm-env-secrets -n openhands \
-     --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
-  ```
+#### 3. Create a secret for your LLM
+We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
+```bash
+kubectl create secret generic litellm-env-secrets -n openhands \
+    --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
+```
 
-4. Create required secrets:
-  
-   There are several databases and other services that need a secret or admin password to function.
-   We'll create a single `$GLOBAL_SECRET` to drive all of these, but we recommend using
-  [SOPS](https://github.com/getsops/sops) or another solution for managing Kubernetes secrets long-term.
+#### 4. Create required secrets
+There are several databases and other services that need a secret or admin password to function.
+We'll create a single `$GLOBAL_SECRET` to drive all of these, but we recommend using
+[SOPS](https://github.com/getsops/sops) or another solution for managing Kubernetes secrets long-term.
 
-   ```bash
+```bash
 
-   export GLOBAL_SECRET=`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32`
+export GLOBAL_SECRET=`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32`
 
-   kubectl create secret generic jwt-secret -n openhands --from-literal=jwt-secret=$GLOBAL_SECRET
+kubectl create secret generic jwt-secret -n openhands --from-literal=jwt-secret=$GLOBAL_SECRET
 
-   kubectl create secret generic keycloak-realm -n openhands \
-     --from-literal=realm-name=openhands \
-     --from-literal=provider-name=email \
-     --from-literal=server-url=http://keycloak \
-     --from-literal=client-id=openhands \
-     --from-literal=client-secret=$GLOBAL_SECRET
+kubectl create secret generic keycloak-realm -n openhands \
+  --from-literal=realm-name=openhands \
+  --from-literal=provider-name=email \
+  --from-literal=server-url=http://keycloak \
+  --from-literal=client-id=openhands \
+  --from-literal=client-secret=$GLOBAL_SECRET
 
-   kubectl create secret generic keycloak-admin -n openhands \
-     --from-literal=admin-password=$GLOBAL_SECRET
+kubectl create secret generic keycloak-admin -n openhands \
+  --from-literal=admin-password=$GLOBAL_SECRET
 
-   kubectl create secret generic postgres-password -n openhands \
-     --from-literal=username=postgres \
-     --from-literal=password=$GLOBAL_SECRET \
-     --from-literal=postgres-password=$GLOBAL_SECRET
+kubectl create secret generic postgres-password -n openhands \
+  --from-literal=username=postgres \
+  --from-literal=password=$GLOBAL_SECRET \
+  --from-literal=postgres-password=$GLOBAL_SECRET
 
-   kubectl create secret generic redis -n openhands \
-     --from-literal=redis-password=$GLOBAL_SECRET
+kubectl create secret generic redis -n openhands \
+  --from-literal=redis-password=$GLOBAL_SECRET
 
-   kubectl create secret generic lite-llm-api-key -n openhands \
-     --from-literal=lite-llm-api-key=$GLOBAL_SECRET
+kubectl create secret generic lite-llm-api-key -n openhands \
+  --from-literal=lite-llm-api-key=$GLOBAL_SECRET
 
-   kubectl create secret generic langfuse-salt -n openhands \
-     --from-literal=salt=$GLOBAL_SECRET
+kubectl create secret generic langfuse-salt -n openhands \
+  --from-literal=salt=$GLOBAL_SECRET
 
-   kubectl create secret generic langfuse-nextauth -n openhands \
-     --from-literal=nextauth-secret=$GLOBAL_SECRET
+kubectl create secret generic langfuse-nextauth -n openhands \
+  --from-literal=nextauth-secret=$GLOBAL_SECRET
 
-   kubectl create secret generic clickhouse-password -n openhands \
-     --from-literal=password=$GLOBAL_SECRET
+kubectl create secret generic clickhouse-password -n openhands \
+  --from-literal=password=$GLOBAL_SECRET
 
-   # NOTE: these need to be the same value
-   # TODO: merge these two secrets
-   kubectl create secret generic default-api-key -n openhands \
-     --from-literal=default-api-key=$GLOBAL_SECRET
-   kubectl create secret generic sandbox-api-key -n openhands \
-     --from-literal=sandbox-api-key=$GLOBAL_SECRET
-   ```
+# NOTE: these need to be the same value
+# TODO: merge these two secrets
+kubectl create secret generic default-api-key -n openhands \
+  --from-literal=default-api-key=$GLOBAL_SECRET
+kubectl create secret generic sandbox-api-key -n openhands \
+  --from-literal=sandbox-api-key=$GLOBAL_SECRET
+```
 
-  You should now have these secrets in the openhands namespace:
-  ```bash
-  kubectl get secret -n openhands
+You should now have these secrets in the openhands namespace:
+```bash
+kubectl get secret -n openhands
 
-  NAME                  TYPE     DATA   AGE
-  clickhouse-password   Opaque   1      13s
-  default-api-key       Opaque   1      7s
-  jwt-secret            Opaque   1      44s
-  langfuse-nextauth     Opaque   1      18s
-  langfuse-salt         Opaque   1      23s
-  lite-llm-api-key      Opaque   1      28s
-  litellm-env-secrets   Opaque   1      2m8s
-  postgres-password     Opaque   3      39s
-  redis                 Opaque   1      35s
-  sandbox-api-key       Opaque   1      3s
-  ```
+NAME                  TYPE     DATA   AGE
+clickhouse-password   Opaque   1      13s
+default-api-key       Opaque   1      7s
+jwt-secret            Opaque   1      44s
+langfuse-nextauth     Opaque   1      18s
+langfuse-salt         Opaque   1      23s
+lite-llm-api-key      Opaque   1      28s
+litellm-env-secrets   Opaque   1      2m8s
+postgres-password     Opaque   3      39s
+redis                 Opaque   1      35s
+sandbox-api-key       Opaque   1      3s
+```
 
 ### Install OpenHands
 Now we can install the helm chart.
