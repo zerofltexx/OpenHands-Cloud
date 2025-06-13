@@ -142,6 +142,20 @@ litellm:
   teamId: "<TEAM_ID>"
 ```
 
+You'll also need to set your model list for LiteLLM, using the LLM secrets you set above:
+```yaml
+litellm:
+  teamId: "<TEAM_ID>"
+
+litellm-helm:
+  proxy_config:
+    model_list:
+    - model_name: "prod/claude-sonnet-4-20250514"
+      litellm_params:
+        model: "anthropic/claude-sonnet-4-20250514"
+        api_key: os.environ/ANTHROPIC_API_KEY
+```
+
 ### Verify your Setup
 Finally, upgrade the release:
 ```bash
