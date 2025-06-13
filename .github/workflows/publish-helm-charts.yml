@@ -86,18 +86,6 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Update ${{ matrix.chart.name }} dependencies
-        run: |
-          echo "Updating dependencies for ${{ matrix.chart.name }}"
-          helm dependency update ${{ matrix.chart.path }}
-
       - name: Publish ${{ matrix.chart.name }} chart to GHCR
         uses: appany/helm-oci-chart-releaser@v0.4.2
         with:
@@ -105,4 +93,7 @@ jobs:
           repository: ${{ matrix.chart.repository }}
           path: ${{ matrix.chart.path }}
           registry: ghcr.io/${{ github.repository_owner }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+          update_dependencies: 'true'
           tag: auto
