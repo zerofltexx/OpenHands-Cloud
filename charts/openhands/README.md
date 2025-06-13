@@ -110,6 +110,8 @@ helm dependency update
 helm upgrade --install openhands --namespace openhands .
 ```
 
+This installation won't complete successfully the first time because we need to set up LiteLLM.
+
 After installing the chart initially you will need a manual step to set up
 LiteLLM.
 
@@ -127,11 +129,11 @@ Next, create a new Team in LiteLLM:
 * login using the username `admin` password $GLOBAL_SECRET (set above)
 * go to Teams -> Create New Team
 * Name it whatever you want
-* Get the numerical team id, and add it to my-values.yaml:
+* Get the team id (e.g. `e0a62105-9c6c-4167-b5be-16674a99d502`), and add it to my-values.yaml:
 
 ```yaml
 litellm:
-  teamId: "<NUMERICAL_TEAM_ID>"
+  teamId: "<TEAM_ID>"
 ```
 
 Finally, upgrade the release:

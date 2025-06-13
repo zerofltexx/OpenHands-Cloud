@@ -8,7 +8,7 @@ runtime:
     tag: 35426a04d82956e8282f557c4ef75d022804a9f4-nikolaik
 
 deployment:
-  replicas: 2
+  replicas: 1
   resources:
     requests:
       memory: 1.5Gi
@@ -18,7 +18,7 @@ deployment:
       cpu: 500m
 
 uvicorn:
-  workers: 3 # suggest setting this to 2 * requests.cpu + 1
+  workers: 1
 
 tls:
   enabled: true
@@ -253,6 +253,7 @@ litellm-helm:
 
 runtime-api:
   enabled: true
+  replicaCount: 1
   monitoring:
     enabled: false
   runtimeInSameCluster: true
@@ -328,7 +329,7 @@ clickhouse:
   # Enable this if you enable langfuse, as it will use clickhouse for storage
   enabled: false
   shards: 2
-  replicaCount: 3
+  replicaCount: 1
   keeper:
     enabled: true
   auth:
