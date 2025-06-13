@@ -78,13 +78,15 @@ stripe:
 
 resendSync:
   enabled: false
+gitlab:
+  enabled: false
+github:
+  enabled: false
 
 monitoring:
   enabled: false
 migrationJob:
   enabled: true
-gitlab:
-  enabled: false
 litellm:
   enabled: true
   # NOTE: to set the LLM model, set the LITELLM_DEFAULT_MODEL variable in the env section above.
