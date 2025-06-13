@@ -76,13 +76,13 @@ jobs:
         chart:
           - name: runtime-api
             path: charts/runtime-api
-            repository: openhands-cloud-runtime-api
+            repository: helm-runtime-api
           - name: image-loader
             path: charts/image-loader
-            repository: openhands-cloud-image-loader
+            repository: helm-image-loader
           - name: openhands
             path: charts/openhands
-            repository: openhands-cloud
+            repository: helm-openhands
     
     steps:
       - name: Checkout
