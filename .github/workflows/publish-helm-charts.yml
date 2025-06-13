@@ -94,6 +94,13 @@ jobs:
         uses: azure/setup-helm@v3
         with:
           version: 'latest'
+          
+      - name: Extract chart version from Chart.yaml
+        id: chart_version
+        run: |
+          VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Using chart version: ${VERSION}"
 
       - name: Publish ${{ matrix.chart.name }} chart to GHCR
         uses: appany/helm-oci-chart-releaser@v0.4.2
@@ -105,4 +112,4 @@ jobs:
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
           update_dependencies: 'true'
-          tag: auto
+          tag: ${{ steps.chart_version.outputs.VERSION }}
