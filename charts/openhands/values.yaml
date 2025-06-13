@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/all-hands-ai/deploy
-  tag: sha-325d5c4
+  tag: sha-4ec3e2f
 
 runtime:
   image:
