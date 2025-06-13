@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "image-loader.fullname" . }}-node-overprovisioner
+  labels:
+    {{- include "image-loader.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-overprovisioner
+spec:
+  replicas: {{ .Values.nodeOverprovisioner.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "image-loader.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: node-overprovisioner
+  template:
+    metadata:
+      labels:
+        {{- include "image-loader.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: node-overprovisioner
+    spec:
+      priorityClassName: {{ .Values.nodeOverprovisioner.priorityClassName | default "node-overprovisioner-priority" }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: pause
+          image: k8s.gcr.io/pause:3.2
+          resources:
+            requests:
+              cpu: {{ .Values.nodeOverprovisioner.resources.requests.cpu | default "4" }}
+              memory: {{ .Values.nodeOverprovisioner.resources.requests.memory | default "4Gi" }}
+            limits:
+              cpu: {{ .Values.nodeOverprovisioner.resources.limits.cpu | default "4" }}
+              memory: {{ .Values.nodeOverprovisioner.resources.limits.memory | default "4Gi" }}

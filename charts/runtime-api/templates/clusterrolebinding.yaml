@@ -1,0 +1,17 @@
+
+{{- if .Values.runtimeInSameCluster }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "runtime-api.fullname" . }}-clusterrolebinding
+  labels:
+    {{- include "runtime-api.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.serviceAccount.name }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "runtime-api.fullname" . }}-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

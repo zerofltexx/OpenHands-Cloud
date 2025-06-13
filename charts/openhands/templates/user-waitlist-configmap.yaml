@@ -1,0 +1,11 @@
+{{- if .Values.allowedUsers }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-waitlist
+data:
+  user-waitlist.txt: |
+    {{- range .Values.allowedUsers }}
+    {{ . }}
+    {{- end }}
+{{- end }}

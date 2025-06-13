@@ -1,0 +1,161 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/all-hands-ai/runtime-api
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: ghcr-login-secret
+
+serviceAccount:
+  create: true
+  name: runtime-api-sa
+  annotations: {}
+
+runtimeInSameCluster: false
+defaultAPIKeySecretName: default-api-key
+
+service:
+  type: ClusterIP
+  port: 5000
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+  DEV_MODE: "false"
+  ARTIFACT_REGISTRY_REPOSITORY: "runtime-api-docker-repo"
+  ARTIFACT_REGISTRY_LOCATION: "us-central1"
+  GCP_REGION: "us-central1"
+  STORAGE_CLASS: "standard-rwo"
+  INCLUDE_START_PROBE: "true"
+  INCLUDE_LIVENESS_PROBE: "true"
+  RUNTIME_CLASS: "sysbox-runc"
+
+resources:
+  limits:
+    cpu: 1
+    memory: 4Gi
+  requests:
+    cpu: 1
+    memory: 4Gi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+postgresql:
+  enabled: false
+  isFeatureDeploy: false
+  primary:
+    persistence:
+      enabled: false
+  auth:
+    username: postgres
+    password: ""  # This should be set externally for security reasons
+    existingSecret: postgres-password
+    database: runtime_api_db
+  service:
+    ports:
+      postgresql: 5432
+
+# External database configuration (used when postgresql.enabled=false)
+database:
+  create: false # Will only be true for AWS as it can't create the DB in terraform
+  secretName: runtime-api-db-credentials  # Secret containing external database credentials
+  poolSize:
+    api: 5  # Pool size for API deployment (default)
+    cronjobs: 2  # Pool size for cronjobs (default)
+  maxOverflow:
+    api: 10  # Max overflow for API deployment (default)
+    cronjobs: 5  # Max overflow for cronjobs (default)
+
+helm-release-pruner:
+  enabled: false
+  job:
+    schedule: "0 */4 * * *"
+    dryRun: False
+  pruneProfiles:
+  - olderThan: "1 days ago"
+    helmReleaseFilter: "^runtime-api-.*$"
+    namespaceFilter: "^runtime-api-.*$"
+    maxReleasesToKeep: 10
+
+
+ingress:
+  enabled: false
+  host: chart-example.local
+  className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  path: /
+  pathType: Prefix
+  tls: true
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 75
+
+cleanup:
+  enabled: true
+  schedule: "*/5 * * * *"
+  idle_seconds: 1800  # Default to 30 minutes
+  dead_seconds: 86400  # Default to 1 day
+
+warmRuntimes:
+  enabled: false
+  configMapName: warm-runtimes-config
+  count: 0
+  configs:
+    - name: default
+      image: "ghcr.io/all-hands-ai/runtime:9e0fee189036e197d721ad359fd12bd02a1b1d09-nikolaik"
+      working_dir: "/openhands/code/"
+      environment: {}
+      command:
+        - /openhands/micromamba/bin/micromamba
+        - run
+        - -n
+        - openhands
+        - poetry
+        - run
+        - python
+        - -u
+        - -m
+        - openhands.runtime.action_execution_server
+        - "60000"
+        - --working-dir
+        - /workspace
+        - --plugins
+        - agent_skills
+        - jupyter
+        - vscode
+        - --username
+        - root
+        - --user-id
+        - "0"
+
+# Database cleanup CronJob configuration
+dbCleanup:
+  enabled: true
+  schedule: "0 0 * * *"  # Run daily at midnight
+  retentionDays: 90  # Number of days to retain runtime objects
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+
+# Pod Status Logger configuration
+podStatusLogger:
+  enabled: true
+  schedule: "*/5 * * * *"  # Run every 5 minutes
+
+monitoring:
+  enabled: true
+
+datadog:
+  env: "dev"

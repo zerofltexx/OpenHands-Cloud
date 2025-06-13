@@ -1,0 +1,56 @@
+ingress:
+  host: "app.example.com"
+  annotations: {}
+    # Value should match your Issuer/ClusterIssuer and uncomment if you're using cert-manager for certificates
+    # cert-manager.io/cluster-issuer: letsencrypt-production
+
+sandbox:
+  apiHostname: https://runtime-api.example.com
+
+env:
+  # This var will cause the openhands deploy to create the LLM team name if it doesn't exist already
+  LITE_LLM_TEAM_NAME: openhands
+
+litellm:
+  enabled: true
+  url: "https://llm-proxy.example.com"
+
+keycloak:
+  url: "https://auth.app.example.com"
+  ingress:
+    hostname: "auth.app.example.com"
+    annotations: {}
+    # Value should match your Issuer/ClusterIssuer and uncomment if you're using cert-manager for certificates
+    # cert-manager.io/cluster-issuer: letsencrypt-production
+
+litellm-helm:
+  # Set this to false if you are using your own litellm instance
+  enabled: true
+  ingress:
+    hosts:
+    - host: llm-proxy.example.com
+      paths:
+      - path: /
+        pathType: Prefix
+    tls:
+    - secretName: llm-proxy-tls
+      hosts:
+      - llm-proxy.example.com
+  proxy_config:
+    environment_variables: {"OR_APP_NAME": "OpenHands", "OR_SITE_URL": "https://docs.all-hands.dev"}
+    # Needs to be updated with your models. If you bring your own litellm, then just point at that!
+    # model_list:
+    # - model_name: "prod/claude-3-5-sonnet-20241022"
+    #   litellm_params:
+    #     model: "anthropic/claude-3-5-sonnet-20241022"
+    #     api_key: os.environ/ANTHROPIC_API_KEY
+    # - model_name: "prod/claude-3-7-sonnet-20250219"
+    #   litellm_params:
+    #     model: "anthropic/claude-3-7-sonnet-20250219"
+    #     api_key: os.environ/ANTHROPIC_API_KEY
+
+runtime-api:
+  ingress:
+    host: runtime-api.example.com
+  env:
+    RUNTIME_BASE_URL: "runtime.example.com"

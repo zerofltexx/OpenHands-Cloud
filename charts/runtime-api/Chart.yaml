@@ -1,0 +1,14 @@
+apiVersion: v2
+name: runtime-api-helm
+description: A Helm chart for the Flask application
+version: 0.1.5 # Change this to trigger a new helm chart version being published
+appVersion: "1.0.0"
+dependencies:
+  - name: postgresql
+    version: 15.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: helm-release-pruner
+    version: 3.3.0
+    repository: https://charts.fairwinds.com/stable
+    condition: helm-release-pruner.enabled

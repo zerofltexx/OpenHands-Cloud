@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "runtime-api.fullname" . }}-migrate-db
+  labels:
+    {{- include "runtime-api.labels" . | nindent 4 }}
+  annotations:
+  {{- if not (or .Values.postgresql.enabled .Values.postgresql.postMigrate) }}
+    "helm.sh/hook": "pre-install,pre-upgrade"
+  {{- else }}
+    "helm.sh/hook": "post-install,post-upgrade"
+  {{- end }}
+    "helm.sh/hook-weight": "-5"
+  {{- if .Values.postgresql.isFeatureDeploy }}
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+  {{- else }}
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+  {{- end }}
+spec:
+  template:
+    metadata:
+      name: {{ include "runtime-api.fullname" . }}-migrate-db
+      labels:
+        {{- include "runtime-api.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      restartPolicy: OnFailure
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate-db
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ["alembic", "upgrade", "head"]
+          env:
+            {{- include "runtime-api.env" . | nindent 12 }}

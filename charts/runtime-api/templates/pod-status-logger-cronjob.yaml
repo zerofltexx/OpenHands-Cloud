@@ -1,0 +1,27 @@
+{{- if .Values.podStatusLogger.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "runtime-api.fullname" . | trunc 33 | trimSuffix "-"  }}-pod-status-logger
+  labels:
+    {{- include "runtime-api.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.podStatusLogger.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ .Values.serviceAccount.name }}
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+          - name: pod-status-logger
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command: ["python", "pod_status_logger.py"]
+            env:
+            {{- include "runtime-api.env" . | nindent 12 }}
+          restartPolicy: OnFailure
+{{- end }}
