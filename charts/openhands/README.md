@@ -35,7 +35,7 @@ environment-specific values in the example file before using it.
    kubectl create namespace openhands
    ```
 
-3. Create a secret for your LLM
+3. Create a secret for your LLM. We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
   ```bash
   kubectl create secret generic litellm-env-secrets -n openhands \
      --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
