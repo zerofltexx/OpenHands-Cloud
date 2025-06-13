@@ -152,6 +152,7 @@ postgresql:
       postgresql: 5432
 
 keycloak:
+  enabled: true
   fullnameOverride: keycloak
   # REQUIRED: Update to match the host set in the ingress section below
   # url: "https://auth.app.example.com"

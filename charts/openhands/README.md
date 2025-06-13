@@ -47,6 +47,9 @@ This Helm chart deploys the complete OpenHands stack, including all required dep
      --from-literal=client-id=openhands \
      --from-literal=client-secret=$GLOBAL_SECRET
 
+   kubectl create secret generic keycloak-admin -n openhands \
+     --from-literal=admin-password=$GLOBAL_SECRET
+
    # Create PostgreSQL password secret
    kubectl create secret generic postgres-password -n openhands \
      --from-literal=username=postgres \
@@ -140,12 +143,19 @@ helm upgrade --install openhands --namespace openhands . -f my-values.yaml
 We recommend traefik as an ingress controller. If you're not using traefik,
 you can set ingress.class in the objects below.
 
-First, enable ingress in your values.yaml:
+You'll also need to point your DNS records to the ingress controller's IP address.
+In this example, we'll use `openhands.example.com` as the main domain.
+
+First, set up a CNAME record pointing *.openhands.example.com to your ingress
+controller's IP address.
+
+Next, enable ingress in your values.yaml:
 ```yaml
 ingress:
   enabled: true
   host: openhands.example.com
 keycloak:
+  url: https://auth.openhands.example.com
   ingress:
     enabled: true
     hostname: auth.openhands.example.com
@@ -202,24 +212,6 @@ Similar instructions apply to GitLab authentication.
      --from-literal=client-id=<your-github-client-id> \
      --from-literal=client-secret=<your-github-client-secret> \
      --from-file=private-key=<path-to-your-private-key-file>
-   ```
-
-1. Create a Keycloak admin password secret:
-   ```bash
-   kubectl create secret generic keycloak-admin -n openhands \
-     --from-literal=admin-password=<your-keycloak-admin-password>
-   ```
-
-   This secret contains the password for the Keycloak admin user. It's used by the configuration job to set up the Keycloak realm and identity providers.
-
-1. Configure Keycloak in your values.yaml:
-   ```yaml
-   keycloak:
-     enabled: true
-     url: "https://<your-keycloak-hostname>"
-     ingress:
-       enabled: true
-       hostname: <your-keycloak-hostname>
    ```
 
 When the chart is deployed, a job will run to configure the Keycloak realm with GitHub as an identity provider using the credentials you provided.
