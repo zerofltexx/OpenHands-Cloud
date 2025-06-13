@@ -23,20 +23,14 @@ environment-specific values in the example file before using it.
 
 ## Installation
 ### Initial setup
-#### 1. Clone the repository
-```bash
-git clone https://github.com/All-Hands-AI/openhands-cloud
-cd openhands-cloud/charts/openhands
-```
-
-#### 2. Create the openhands namespace
+#### 1. Create the openhands namespace
 If you want to use a different namespace, you'll need to change the `-n` option
 in all the commands below.
 ```bash
 kubectl create namespace openhands
 ```
 
-#### 3. Create a secret for your LLM
+#### 2. Create a secret for your LLM
 We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM,
 including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names
 you want--we'll reference them again below in our LiteLLM setup.
@@ -45,7 +39,7 @@ kubectl create secret generic litellm-env-secrets -n openhands \
     --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
 ```
 
-#### 4. Create required secrets
+#### 3. Create required secrets
 There are several databases and other services that need a secret or admin password to function.
 We'll create a single `$GLOBAL_SECRET` to drive all of these, but we recommend using
 [SOPS](https://github.com/getsops/sops) or another solution for managing Kubernetes secrets long-term.
@@ -116,7 +110,7 @@ Now we can install the helm chart.
 
 ```bash
 helm dependency update
-helm upgrade --install openhands --namespace openhands .
+helm upgrade --install openhands --namespace openhands oci://ghcr.io/all-hands-ai/helm-charts/openhands
 ```
 
 This installation won't complete successfully the first time because we need to set up LiteLLM.
