@@ -1,13 +1,11 @@
 name: Helm Charts CI/CD
 
 on:
-  # Run tests on PRs and pushes to main
+  # Run on all pushes to main
   push:
     branches:
       - main
-    paths:
-      - 'charts/**'
-      - '.github/workflows/publish-helm-charts.yml'
+  # Run on PRs that modify charts or workflow
   pull_request:
     paths:
       - 'charts/**'
