@@ -15,3 +15,8 @@ You may also want to check out the MIT-licensed [OpenHands](https://github.com/A
 Issues in this repository are for the OpenHands Cloud app and
 for the Helm charts here. Issues with OpenHands itself should be
 opened in the [core OpenHands repository](github.com/All-Hands-AI/OpenHands).
+
+# Installation
+
+See [charts/openhands/README.md](./charts/openhands/README.md) for
+full instructions.
