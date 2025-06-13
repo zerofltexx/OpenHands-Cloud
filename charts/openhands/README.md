@@ -84,6 +84,7 @@ We'll assume Anthropic here, but you can set any env vars you'll need to connect
    kubectl create secret generic clickhouse-password -n openhands \
      --from-literal=password=$GLOBAL_SECRET
 
+   # NOTE: these need to be the same value
    # TODO: merge these two secrets
    kubectl create secret generic default-api-key -n openhands \
      --from-literal=default-api-key=$GLOBAL_SECRET
