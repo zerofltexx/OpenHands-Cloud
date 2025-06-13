@@ -39,6 +39,14 @@ This Helm chart deploys the complete OpenHands stack, including all required dep
    # Create JWT secret for sessions
    kubectl create secret generic jwt-secret -n openhands --from-literal=jwt-secret=$GLOBAL_SECRET
 
+   # Create Keycloak realm secret
+   kubectl create secret generic keycloak-realm -n openhands \
+     --from-literal=realm-name=openhands \
+     --from-literal=provider-name=email \
+     --from-literal=server-url=http://keycloak \
+     --from-literal=client-id=openhands \
+     --from-literal=client-secret=$GLOBAL_SECRET
+
    # Create PostgreSQL password secret
    kubectl create secret generic postgres-password -n openhands \
      --from-literal=username=postgres \
