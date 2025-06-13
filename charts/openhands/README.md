@@ -6,115 +6,111 @@ This Helm chart deploys the complete OpenHands stack, including all required dep
 
 - Kubernetes 1.19+
 - Helm 3.2.0+
-- PV provisioner support in the underlying infrastructure (if persistence is enabled)
 - Ingress controller (recommended: Traefik)
-- A TLS solution for certificates. We use cert-manager to handle this in cluster normally.
-- Storage class named "standard-rwo" (or configure a different storage class name as described below)
+- A TLS solution for certificates (recommended: cert-manager)
 
-### Storage Class Configuration
-
-By default, the chart expects a storage class named `standard-rwo`. If you're using EKS, which typically has a `gp2` storage class, you can configure the chart to use it instead:
-
-```yaml
-runtime-api:
-  env:
-    STORAGE_CLASS: "gp2"  # Replace with your cluster's storage class name
-```
-
-Alternatively, you can create a storage class named `standard-rwo` that uses your cloud provider's block storage:
-
-```bash
-# For AWS EKS
-kubectl apply -f - <<EOF
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: standard-rwo
-provisioner: kubernetes.io/aws-ebs
-parameters:
-  type: gp2
-volumeBindingMode: WaitForFirstConsumer
-EOF
-
-# For GKE
-kubectl apply -f - <<EOF
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: standard-rwo
-provisioner: pd.csi.storage.gke.io
-parameters:
-  type: pd-standard
-volumeBindingMode: WaitForFirstConsumer
-EOF
-```
 
 ## Installation
 ### Initial setup
 1. Clone the repository and navigate to the chart directory:
    ```bash
-   git clone https://github.com/All-Hands-AI/on-prem.git
-   cd on-prem/k8s/helm/openhands-all
+   git clone https://github.com/All-Hands-AI/openhands-cloud
+   cd openhands-cloud/charts/openhands
    ```
 
-1. Create required, non-keycloak secrets:
-   ```bash
-   # Create namespace (if you want to use a different namespace, you will need to change it in all the commands that follow)
-   kubectl create namespace openhands
-
-   # Create JWT secret for sessions
-   kubectl create secret generic jwt-secret -n openhands --from-literal=jwt-secret=<your-jwt-secret>
-
-   # Create PostgreSQL password secret
-   kubectl create secret generic postgres-password -n openhands \
-     --from-literal=username=postgres \
-     --from-literal=password=<your-postgres-password> \
-     --from-literal=postgres-password=<your-postgres-password>
-
-   # Create Redis password secret
-   kubectl create secret generic redis -n openhands \
-     --from-literal=redis-password=<your-redis-password>
-
-   # Create LiteLLM API key secret
-   kubectl create secret generic lite-llm-api-key -n openhands \
-     --from-literal=lite-llm-api-key=<your-litellm-api-key>
-
-   # Create langfuse salt secret
-   kubectl create secret generic langfuse-salt -n openhands \
-     --from-literal=salt=<your-salt-value>
-
-   # Create langfuse nextauth secret (for signing JWTs)
-   kubectl create secret generic langfuse-nextauth -n openhands \
-     --from-literal=nextauth-secret=<your-nextauth-secret>
-
-   # Create clickhouse password secret
-   kubectl create secret generic clickhouse-password -n openhands \
-     --from-literal=password=<your-clickhouse-password>
-
-   # Create two secrets, one that configures runtime-api with a default api key, and another that configures openhands to utilize that api key.
-   # There are two secrets because these two workloads can also run in different clusters/namespaces
-   kubectl create secret generic default-api-key -n openhands \
-     --from-literal=default-api-key=<your-runtime-api-key>
-
-   kubectl create secret generic sandbox-api-key -n openhands \
-     --from-literal=sandbox-api-key=<your-runtime-api-key>
-   ```
-
-  If your litellm configuration will use environment variables to hold your LLM API Keys, you will configure them as key/value pairs in the secret `litellm-env-secrets`. Even if you don't need these environment variables, you should set the following in your values:
-  ```yaml
-  litellm-helm:
-    environmentSecrets: []
-  ```
-
-  Example secret:
+2. Create a secret for your LLM
   ```bash
   kubectl create secret generic litellm-env-secrets -n openhands \
      --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
   ```
 
-### Keycloak with GitHub OAuth Configuration
+3. Create required secrets:
+   ```bash
+   # Create namespace (if you want to use a different namespace, you will need to change it in all the commands that follow)
+   kubectl create namespace openhands
+
+   # For a basic installation, we'll reuse this secret for several components. You can create a different secret for each component if you prefer.
+   export GLOBAL_SECRET=`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32`
+
+   # Create JWT secret for sessions
+   kubectl create secret generic jwt-secret -n openhands --from-literal=jwt-secret=$GLOBAL_SECRET
+
+   # Create PostgreSQL password secret
+   kubectl create secret generic postgres-password -n openhands \
+     --from-literal=username=postgres \
+     --from-literal=password=$GLOBAL_SECRET \
+     --from-literal=postgres-password=$GLOBAL_SECRET
+
+   # Create Redis password secret
+   kubectl create secret generic redis -n openhands \
+     --from-literal=redis-password=$GLOBAL_SECRET
+
+   # Create LiteLLM API key secret
+   kubectl create secret generic lite-llm-api-key -n openhands \
+     --from-literal=lite-llm-api-key=$GLOBAL_SECRET
+
+   # Create langfuse salt secret
+   kubectl create secret generic langfuse-salt -n openhands \
+     --from-literal=salt=$GLOBAL_SECRET
+
+   # Create langfuse nextauth secret (for signing JWTs)
+   kubectl create secret generic langfuse-nextauth -n openhands \
+     --from-literal=nextauth-secret=$GLOBAL_SECRET
+
+   # Create clickhouse password secret
+   kubectl create secret generic clickhouse-password -n openhands \
+     --from-literal=password=$GLOBAL_SECRET
+
+   # Create two secrets, one that configures runtime-api with a default api key, and another that configures openhands to utilize that api key.
+   # There are two secrets because these two workloads can also run in different clusters/namespaces
+   kubectl create secret generic default-api-key -n openhands \
+     --from-literal=default-api-key=$GLOBAL_SECRET
+
+   kubectl create secret generic sandbox-api-key -n openhands \
+     --from-literal=sandbox-api-key=$GLOBAL_SECRET
+   ```
+
+### Install and Set Up OpenHands
+Now we can install the helm chart:
+
+```bash
+helm upgrade --install openhands --namespace openhands .
+```
+
+After installing the chart initially you will need a manual step to set up
+LiteLLM.
+
+> [!NOTE]
+> This process will be automated in the near future.
+
+First, port-forward to litellm:
+
+```bash
+kubectl port-forward svc/openhands-litellm 4000:4000
+```
+
+Next, create a new Team in LiteLLM:
+* Navigate to http://localhost:4000/ui in your browser
+* login using the username `admin` password $GLOBAL_SECRET (set above)
+* go to Teams -> Create New Team
+* Name it whatever you want
+* Get the numerical team id, and add it to my-values.yaml:
+
+```yaml
+litellm:
+  teamId: "<NUMERICAL_TEAM_ID>"
+```
+
+Finally, upgrade the release:
+```bash
+helm upgrade --install openhands --namespace openhands . -f my-values.yaml
+```
+
+## Enabling GitHub Authentication
 
 The chart includes Keycloak for authentication and supports GitHub OAuth integration. To configure GitHub OAuth:
+
+Similar instructions apply to GitLab authentication.
 
 1. Create a GitHub OAuth App:
    - Go to your GitHub organization settings or personal settings
@@ -170,36 +166,6 @@ The chart includes Keycloak for authentication and supports GitHub OAuth integra
    ```
 
 When the chart is deployed, a job will run to configure the Keycloak realm with GitHub as an identity provider using the credentials you provided.
-
-### Install OpenHands
-Install the chart!
-
-```bash
-helm upgrade --install openhands --namespace openhands . -f my-values.yaml
-```
-
-### Configure lite-llm team ID in openhands values
-After installing the chart initially you will want to port-forward to litellm and create a new team.
-
-```bash
-kubectl port-forward svc/openhands-litellm 4000:4000
-```
-
-Navigate to http://localhost:4000/ui in your browser and login using the `admin` username and the API key from `lite-llm-api-key` secret you configured earlier.
-Once logged in, go to Teams -> Click Create New Team. Name it whatever you want and then get the numerical team id. In your values file, update the following and then upgrade the helm install with the new value.
-
-values-update:
-```yaml
-litellm:
-  ...
-  teamId: "<UPDATE_WITH_TEAM_ID>"
-  ...
-```
-
-Upgrade the release:
-```bash
-helm upgrade --install openhands --namespace openhands . -f my-values.yaml
-```
 
 ## Configuration
 
@@ -306,6 +272,44 @@ To use an external S3-compatible storage instead of MinIO:
    #   --from-literal=access-key=<your-access-key> \
    #   --from-literal=secret-key=<your-secret-key>
    ```
+
+### Storage Class Configuration
+
+By default, the chart expects a storage class named `standard-rwo`. If you're using EKS, which typically has a `gp2` storage class, you can configure the chart to use it instead:
+
+```yaml
+runtime-api:
+  env:
+    STORAGE_CLASS: "gp2"  # Replace with your cluster's storage class name
+```
+
+Alternatively, you can create a storage class named `standard-rwo` that uses your cloud provider's block storage:
+
+```bash
+# For AWS EKS
+kubectl apply -f - <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard-rwo
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+volumeBindingMode: WaitForFirstConsumer
+EOF
+
+# For GKE
+kubectl apply -f - <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard-rwo
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-standard
+volumeBindingMode: WaitForFirstConsumer
+EOF
+```
 
 ## Upgrading
 
