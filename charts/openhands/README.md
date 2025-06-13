@@ -36,7 +36,7 @@ environment-specific values in the example file before using it.
    ```
 
 3. Create a secret for your LLM.
-
+  
   We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
   ```bash
   kubectl create secret generic litellm-env-secrets -n openhands \
@@ -44,6 +44,7 @@ environment-specific values in the example file before using it.
   ```
 
 4. Create required secrets:
+  
    There are several databases and other services that need a secret or admin password to function.
    We'll create a single `$GLOBAL_SECRET` to drive all of these, but we recommend using
   [SOPS](https://github.com/getsops/sops) or another solution for managing Kubernetes secrets long-term.
