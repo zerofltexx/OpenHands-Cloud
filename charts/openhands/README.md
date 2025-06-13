@@ -169,7 +169,7 @@ In this example, we'll use `openhands.example.com` as the main domain.
 First, set up a CNAME record pointing *.openhands.example.com to your ingress
 controller's IP address.
 
-Next, enable ingress in your values.yaml:
+Next, enable ingress in my-values.yaml:
 ```yaml
 ingress:
   enabled: true
