@@ -1,0 +1,35 @@
+image:
+  repository: ghcr.io/all-hands-ai/runtime
+  tag: 0.9.6-nikolaik
+  pullPolicy: Always
+
+runtimeClass: sysbox-runc
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector:
+  sysbox-install: "yes"
+
+tolerations:
+- key: "sysbox-runtime"
+  operator: "Equal"
+  value: "not-running"
+  effect: "NoSchedule"
+affinity: {}
+
+nodeOverprovisioner:
+  replicas: 10
+  priorityClassName: node-overprovisioner-priority
+  resources:
+    requests:
+      cpu: 2500m
+      memory: 7500Mi
+    limits:
+      cpu: 2500m
+      memory: 7500Mi

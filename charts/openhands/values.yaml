@@ -1,0 +1,372 @@
+image:
+  repository: ghcr.io/all-hands-ai/deploy
+  tag: sha-4ec3e2f
+
+runtime:
+  image:
+    repository: ghcr.io/all-hands-ai/runtime
+    tag: 35426a04d82956e8282f557c4ef75d022804a9f4-nikolaik
+
+deployment:
+  replicas: 1
+  resources:
+    requests:
+      memory: 1.5Gi
+      cpu: 500m
+    limits:
+      memory: 1.5Gi
+      cpu: 500m
+
+uvicorn:
+  workers: 1
+
+tls:
+  enabled: true
+
+ingress:
+  enabled: false
+  # REQUIRED: Update to a hostname in a DNS domain you own
+  # host: "app.example.com"
+  class: traefik
+  annotations:
+    {}
+    # UPDATE: if you use cert-manager, enter your clusterIssuer may not match.
+    # cert-manager.io/cluster-issuer: letsencrypt-production
+
+serviceAccount:
+  create: true
+  name: openhands-sa
+
+sandbox:
+  # REQUIRED: Update so this matches what you have set in the runtime api ingress
+  # apiHostname: https://runtime-api.example.com
+
+filestore:
+  ephemeral: true
+  bucket: openhands-sessions
+
+sessions:
+  existingSecret: jwt-secret
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+appConfig:
+  OPENHANDS_CONFIG_CLS: "server.config.SaaSServerConfig"
+  OPENHANDS_CONVERSATION_VALIDATOR_CLS: "storage.saas_conversation_validator.SaasConversationValidator"
+  OPENHANDS_GITHUB_SERVICE_CLS: "integrations.github.github_service.SaaSGitHubService"
+  OPENHANDS_GITLAB_SERVICE_CLS: "integrations.gitlab.gitlab_service.SaaSGitLabService"
+  OPENHANDS_MCP_CONFIG_CLS: "server.mcp.mcp_config.SaaSOpenHandsMCPConfig"
+  POSTHOG_CLIENT_KEY: "1234abcd"
+
+env:
+  DISABLE_WAITLIST: "true"
+  # replace prod/claude-3-7-sonnet-20250219 with your LLM model
+  LITELLM_DEFAULT_MODEL: "litellm_proxy/prod/claude-3-7-sonnet-20250219"
+
+allowedUsers: null
+
+stripe:
+  enabled: false
+  requirePayment: false
+  auth:
+    existingSecret: stripe-secret
+
+resendSync:
+  enabled: false
+gitlab:
+  enabled: false
+github:
+  enabled: false
+
+monitoring:
+  enabled: false
+migrationJob:
+  enabled: true
+litellm:
+  enabled: true
+  # NOTE: to set the LLM model, set the LITELLM_DEFAULT_MODEL variable in the env section above.
+  # REQUIRED: Update to match the hostname set in the litellm-helm ingress section
+  url: "https://llm-proxy.example.com"
+  # REQUIRED: Update this AFTER you initially install the chart and login to litellm to create the team.
+  # teamId: ""
+  auth:
+    existingSecret: lite-llm-api-key
+
+# External Dependencies
+minio:
+  replicas: 1
+  mode: standalone
+  persistence:
+    enabled: false
+  buckets:
+    - name: openhands-sessions
+      policy: none
+      purge: true
+  svcaccts:
+    - accessKey: "default"
+      secretKey: "notasecret"
+      user: root
+  rootUser: "root"
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 100m
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    existingSecret: "redis"
+  master:
+    persistence:
+      enabled: false
+  replica:
+    replicaCount: 0
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 100m
+
+postgresql:
+  enabled: true
+  auth:
+    username: postgres
+    existingSecret: postgres-password
+  primary:
+    initdb:
+      scriptsConfigMap: oh-psql-scripts-configmap
+    persistence:
+      enabled: false
+  service:
+    ports:
+      postgresql: 5432
+
+keycloak:
+  enabled: true
+  fullnameOverride: keycloak
+  # REQUIRED: Update to match the host set in the ingress section below
+  # url: "https://auth.app.example.com"
+  replicaCount: 1
+  enabled: true
+  production: true
+  proxyHeaders: forwarded
+  ingress:
+    enabled: false
+    # REQUIRED: Update to a hostname in a DNS domain you own
+    # hostname: auth.app.example.com
+    servicePort: 80
+    tls: true
+    annotations:
+      {}
+      # UPDATE: if you use cert-manager, enter your clusterIssuer may not match.
+      # cert-manager.io/cluster-issuer: letsencrypt-production
+    ingressClassName: traefik
+  auth:
+    adminUser: tmpadmin
+    adminPassword: password
+  service:
+    type: ClusterIP
+  serviceAccount:
+    name: "keycloak-sa"
+  postgresql:
+    enabled: false
+  externalDatabase:
+    host: oh-main-postgresql
+    existingSecret: postgres-password
+    existingSecretUserKey: username
+    existingSecretPasswordKey: password
+  extraEnvVars:
+    - name: KC_FEATURES
+      value: token-exchange,admin-fine-grained-authz
+
+litellm-helm:
+  # Set this to false if you are using your own litellm instance
+  enabled: true
+  masterkeySecretName: lite-llm-api-key
+  masterkeySecretKey: lite-llm-api-key
+  environmentSecrets: [litellm-env-secrets]
+  # Uncomment this if you want to use langfuse for tracing (and enable langfuse below)
+  # envVars:
+  #   LANGFUSE_HOST: "http://oh-main-langfuse"
+  db:
+    deployStandalone: false
+    useExisting: true
+    database: litellm
+    endpoint: "oh-main-postgresql"
+    secret:
+      name: postgres-password
+      usernameKey: username
+      passwordKey: password
+  ingress:
+    enabled: false
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-production
+    hosts:
+    # REQUIRED: Update to a hostname in a DNS domain you own
+    # - host: llm-proxy.example.com
+    #   paths:
+    #   - path: /
+    #     pathType: Prefix
+    tls:
+      - secretName: llm-proxy-tls
+        # REQUIRED: Update to match the hostname you set above
+        hosts:
+          - llm-proxy.example.com
+  proxy_config:
+    environment_variables:
+      {
+        "OR_APP_NAME": "OpenHands",
+        "OR_SITE_URL": "https://docs.all-hands.dev",
+      }
+    model_list:
+    # UPDATE to use models that you have access to and have an API key stored in the litellm-env-secrets secret
+    # - model_name: "prod/claude-3-5-sonnet-20241022"
+    #   litellm_params:
+    #     model: "anthropic/claude-3-5-sonnet-20241022"
+    #     api_key: os.environ/ANTHROPIC_API_KEY
+    # - model_name: "prod/claude-3-7-sonnet-20250219"
+    #   litellm_params:
+    #     model: "anthropic/claude-3-7-sonnet-20250219"
+    #     api_key: os.environ/ANTHROPIC_API_KEY
+    litellm_settings:
+      num_retries: 3
+      request_timeout: 600
+      # Uncomment this if you want to use langfuse for tracing (and enable langfuse below)
+      # success_callback: ["langfuse"]
+      # failure_callback: ["langfuse"]
+      # langfuse_default_tags: ["cache_hit", "cache_key", "proxy_base_url", "user_api_key_alias", "user_api_key_user_id", "user_api_key_team_alias"]
+      context_window_fallbacks: []
+      allowed_fails: 3
+
+runtime-api:
+  enabled: true
+  replicaCount: 1
+  monitoring:
+    enabled: false
+  runtimeInSameCluster: true
+  image:
+    tag: sha-530719c
+  imagePullSecrets: []
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1.5Gi
+    limits:
+      cpu: null
+      memory: 1.5Gi
+  warmRuntimes:
+    enabled: true
+    count: 1
+    configs:
+      - name: default
+        image: "ghcr.io/all-hands-ai/runtime:35426a04d82956e8282f557c4ef75d022804a9f4-nikolaik"
+        working_dir: "/openhands/code/"
+        environment: {}
+        command:
+          - /openhands/micromamba/bin/micromamba
+          - run
+          - -n
+          - openhands
+          - poetry
+          - run
+          - python
+          - -u
+          - -m
+          - openhands.runtime.action_execution_server
+          - "60000"
+          - --working-dir
+          - /workspace
+          - --plugins
+          - agent_skills
+          - jupyter
+          - vscode
+          - --username
+          - root
+          - --user-id
+          - "0"
+  postgresql:
+    postMigrate: true
+    auth:
+      username: postgres
+      existingSecret: postgres-password
+  ingress:
+    enabled: false
+    # REQUIRED: Update to a hostname in a DNS domain you own
+    # host: runtime-api.example.com
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-production
+    tls: true
+  env:
+    DB_HOST: oh-main-postgresql
+    DB_USER: postgres
+    DB_NAME: runtime_api_db
+    RUNTIME_IN_SAME_CLUSTER: "true"
+    K8S_NAMESPACE: "openhands"
+    RUNTIME_CLASS: ""
+    # REQUIRED: Update to match the host set in the ingress section above
+    # RUNTIME_BASE_URL: "runtime.example.com"
+    RUNTIME_DISABLE_SSL: "true"
+    MEMORY_REQUEST: "1024Mi"
+    MEMORY_LIMIT: "2048Mi"
+    CPU_REQUEST: "500m"
+    EPHEMERAL_STORAGE_SIZE: "10Gi"
+
+clickhouse:
+  # Enable this if you enable langfuse, as it will use clickhouse for storage
+  enabled: false
+  shards: 2
+  replicaCount: 1
+  keeper:
+    enabled: true
+  auth:
+    username: default
+    existingSecret: clickhouse-password
+    existingSecretKey: password
+
+langfuse:
+  # Enable this if you want to use langfuse for tracing
+  enabled: false
+  langfuse:
+    salt:
+      secretKeyRef:
+        name: langfuse-salt
+        key: salt
+    nextauth:
+      secret:
+        secretKeyRef:
+          name: langfuse-nextauth
+          key: nextauth-secret
+  clickhouse:
+    deploy: false
+    host: oh-main-clickhouse
+    auth:
+      username: default
+      existingSecret: clickhouse-password
+      existingSecretKey: password
+  postgresql:
+    deploy: false
+    host: oh-main-postgresql
+    auth:
+      username: postgres
+      existingSecret: postgres-password
+      existingSecretKey: password
+  redis:
+    deploy: false
+    host: oh-main-redis
+    auth:
+      existingSecret: redis
+      existingSecretPasswordKey: redis-password

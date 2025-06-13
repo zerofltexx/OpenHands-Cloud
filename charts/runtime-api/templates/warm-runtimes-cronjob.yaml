@@ -1,0 +1,38 @@
+{{- if .Values.warmRuntimes.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "runtime-api.fullname" . }}-warm-runtimes
+  labels:
+    {{- include "runtime-api.labels" . | nindent 4 }}
+spec:
+  schedule: "* * * * *"  # Run every minute
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "runtime-api.selectorLabels" . | nindent 12 }}
+        spec:
+          serviceAccountName: {{ .Values.serviceAccount.name }}
+          restartPolicy: OnFailure
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12}}
+          {{- end }}
+          containers:
+            - name: warm-runtimes
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["python", "/app/warm_runtimes.py"]
+              env:
+                {{- include "runtime-api.env" . | nindent 16 }}
+              volumeMounts:
+                - name: warm-runtimes-config
+                  mountPath: /config
+          volumes:
+            - name: warm-runtimes-config
+              configMap:
+                name: {{ .Values.warmRuntimes.configMapName }}
+{{- end }}

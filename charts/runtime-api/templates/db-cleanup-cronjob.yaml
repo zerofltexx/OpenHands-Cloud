@@ -1,0 +1,35 @@
+{{- if and .Values.dbCleanup.enabled (or .Values.postgresql.enabled .Values.database.secretName) }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "runtime-api.fullname" . }}-db-cleanup
+  labels:
+    {{- include "runtime-api.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.dbCleanup.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.dbCleanup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.dbCleanup.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ .Values.serviceAccount.name }}
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+          - name: db-cleanup
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command: ["python", "prune_db.py"]
+            env:
+            - name: RETENTION_DAYS
+              value: {{ .Values.dbCleanup.retentionDays | quote }}
+            {{- include "runtime-api.env" . | nindent 12 }}
+            - name: DB_POOL_SIZE
+              value: {{ .Values.database.poolSize.cronjobs | default 2 | quote }}
+            - name: DB_MAX_OVERFLOW
+              value: {{ .Values.database.maxOverflow.cronjobs | default 5 | quote }}
+          restartPolicy: OnFailure
+{{- end }}

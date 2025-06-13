@@ -1,0 +1,230 @@
+{{- define "openhands.env" }}
+- name: RUNTIME
+  value: remote
+- name: OPENHANDS_CONFIG_CLS
+  value: {{ .Values.appConfig.OPENHANDS_CONFIG_CLS }}
+- name: OPENHANDS_GITHUB_SERVICE_CLS
+  value: {{ .Values.appConfig.OPENHANDS_GITHUB_SERVICE_CLS }}
+- name: OPENHANDS_GITLAB_SERVICE_CLS
+  value: {{ .Values.appConfig.OPENHANDS_GITLAB_SERVICE_CLS }}
+- name: OPENHANDS_MCP_CONFIG_CLS
+  value: {{ .Values.appConfig.OPENHANDS_MCP_CONFIG_CLS }}
+- name: OPENHANDS_CONVERSATION_VALIDATOR_CLS
+  value: {{ .Values.appConfig.OPENHANDS_CONVERSATION_VALIDATOR_CLS }}
+- name: LOG_JSON # Configure structured logging for Google Cloud
+  value: '1'
+- name: LOG_JSON_LEVEL_KEY
+  value: 'severity'
+{{- if .Values.appConfig.POSTHOG_CLIENT_KEY }}
+- name: POSTHOG_CLIENT_KEY
+  value: {{ .Values.appConfig.POSTHOG_CLIENT_KEY }}
+{{- end }}
+
+- name: FILE_STORE_PATH
+  value: {{ .Values.filestore.bucket }}
+- name: SANDBOX_KEEP_RUNTIME_ALIVE
+  value: 'true'
+- name: SANDBOX_CLOSE_DELAY
+  value: "1800"
+{{- if .Values.filestore.ephemeral }}
+- name: FILE_STORE
+  value: s3
+- name: AWS_ACCESS_KEY_ID
+  value: {{ (index .Values.minio.svcaccts 0).accessKey }}
+- name: AWS_SECRET_ACCESS_KEY
+  value: {{ (index .Values.minio.svcaccts 0).secretKey }}
+- name: AWS_S3_ENDPOINT
+  value: {{ printf "%s-%s" $.Release.Name "minio:9000" }}
+- name: AWS_S3_BUCKET
+  value: {{ .Values.filestore.bucket }}
+- name: AWS_S3_SECURE
+  value: 'false'
+{{- else }}
+- name: FILE_STORE
+  value: {{ .Values.filestore.type }}
+{{- end }}
+- name: SANDBOX_USER_ID
+  value: '0'
+- name: RUN_AS_OPENHANDS
+  value: 'false'
+- name: NO_SETUP
+  value: 'true'
+- name: SANDBOX_RUNTIME_CONTAINER_IMAGE
+  value: "{{ .Values.runtime.image.repository }}:{{ .Values.runtime.image.tag | default (printf "%s-nikolaik" (.Values.image.tag | default .Chart.AppVersion)) }}"
+- name: SANDBOX_REMOTE_RUNTIME_API_URL
+  value: {{ .Values.sandbox.apiHostname }}
+- name: SANDBOX_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: sandbox-api-key
+      key: sandbox-api-key
+{{- if .Values.sessions.existingSecret }}
+- name: JWT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.sessions.existingSecret }}
+      key: jwt-secret
+{{- end }}
+{{- if .Values.allowedUsers }}
+- name: GITHUB_USER_LIST_FILE
+  value: /app/user-waitlist/user-waitlist.txt
+{{- end }}
+{{- if .Values.allowedUsersSheet }}
+- name: GITHUB_USERS_SHEET_ID
+  value: {{ .Values.allowedUsersSheet }}
+{{- end }}
+{{- if .Values.redis.enabled }}
+- name: REDIS_HOST
+  value: {{ .Release.Name }}-redis-master
+- name: REDIS_PORT
+  value: "6379"
+- name: REDIS_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.redis.auth.existingSecret }}
+      key: redis-password
+{{- end }}
+{{- if .Values.keycloak.enabled }}
+- name: KEYCLOAK_SERVER_URL
+  value: {{ .Values.keycloak.url }}
+- name: KEYCLOAK_REALM_NAME
+  valueFrom:
+    secretKeyRef:
+      name: keycloak-realm
+      key: realm-name
+- name: KEYCLOAK_PROVIDER_NAME
+  valueFrom:
+    secretKeyRef:
+      name: keycloak-realm
+      key: provider-name
+- name: KEYCLOAK_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: keycloak-realm
+      key: client-id
+- name: KEYCLOAK_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: keycloak-realm
+      key: client-secret
+- name: KEYCLOAK_TMPADMIN_PASSWORD
+  value: {{ .Values.keycloak.auth.adminPassword }}
+- name: KEYCLOAK_ADMIN_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: keycloak-admin
+      key: admin-password
+{{- end }}
+{{- if .Values.github.enabled }}
+- name: GITHUB_APP_PRIVATE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: github-app
+      key: private-key
+- name: GITHUB_APP_WEBHOOK_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: github-app
+      key: webhook-secret
+- name: GITHUB_APP_ID
+  valueFrom:
+    secretKeyRef:
+      name: github-app
+      key: app-id
+- name: GITHUB_APP_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: github-app
+      key: client-id
+- name: GITHUB_APP_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: github-app
+      key: client-secret
+{{- end }}
+{{- if .Values.gitlab.enabled }}
+- name: GITLAB_APP_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: gitlab-app
+      key: client-id
+- name: GITLAB_APP_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: gitlab-app
+      key: client-secret
+{{- end }}
+{{- if and .Values.litellm.enabled .Values.litellm.useDependentInstall }}
+- name: LITE_LLM_API_URL
+  value: http://{{ .Release.Name }}-litellm
+{{- else }}
+- name: LITE_LLM_API_URL
+  value: {{ .Values.litellm.url }}
+{{- end }}
+{{- if .Values.litellm.enabled }}
+- name: LITE_LLM_TEAM_ID
+  value: {{ .Values.litellm.teamId }}
+- name: LITE_LLM_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.litellm.auth.existingSecret }}
+      key: lite-llm-api-key
+{{- end }}
+{{- if .Values.stripe.enabled }}
+- name: STRIPE_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.stripe.auth.existingSecret }}
+      key: stripe-api-key
+- name: STRIPE_PUBLISHABLE_KEY
+  value: {{ .Values.stripe.publishableKey }}
+- name: REQUIRE_PAYMENT
+  value: "{{ .Values.stripe.requirePayment | default false }}"
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+{{- if .Values.ingress.prefixWithBranch }}
+- name: WEB_HOST
+  value: {{ .Values.branchSanitized }}.{{ .Values.ingress.host }}
+- name: AUTH_WEB_HOST
+  value: {{ .Values.branchSanitized }}.auth.{{ .Values.ingress.host }}
+- name: MCP_HOST
+  value: {{ .Values.branchSanitized }}.{{ .Values.ingress.host }}
+{{- else }}
+- name: WEB_HOST
+  value: {{ .Values.ingress.host }}
+- name: AUTH_WEB_HOST
+  value: auth.{{ .Values.ingress.host }}
+- name: MCP_HOST
+  value: {{ .Values.ingress.host }}
+{{- end }}
+{{- else }}
+- name: WEB_HOST
+  value: {{ .Values.ingress.host }}
+- name: AUTH_WEB_HOST
+  value: keycloak
+- name: MCP_HOST
+  value: {{ .Values.ingress.host }}
+{{- end }}
+
+
+{{- if .Values.postgresql.enabled }}
+- name: DB_HOST
+  value: "{{ .Release.Name }}-postgresql"
+- name: DB_USER
+  value: "{{ .Values.postgresql.auth.username }}"
+- name: DB_NAME
+  value: "{{ .Values.postgresql.auth.database }}"
+{{- end }}
+{{- if .Values.env }}
+{{- range $key, $value := .Values.env }}
+- name: {{ $key }}
+  value: {{ $value | quote }}
+{{- end }}
+{{- end }}
+- name: DB_PASS
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.postgresql.auth.existingSecret }}
+      key: password
+{{- end }}
