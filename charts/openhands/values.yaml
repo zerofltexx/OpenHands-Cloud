@@ -40,6 +40,7 @@ serviceAccount:
 sandbox:
   # REQUIRED: Update so this matches what you have set in the runtime api ingress
   # apiHostname: https://runtime-api.example.com
+  apiHostname: "https://dummy-runtime-api.example.com"
 
 filestore:
   ephemeral: true
