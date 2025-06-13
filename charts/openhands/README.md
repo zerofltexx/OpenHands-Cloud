@@ -1,4 +1,4 @@
-# Openhands-all Helm Chart
+# OpenHands Cloud Helm Chart
 
 This Helm chart deploys the complete OpenHands stack, including all required dependencies. It's designed to be a one-stop solution for deploying OpenHands in a Kubernetes environment.
 
