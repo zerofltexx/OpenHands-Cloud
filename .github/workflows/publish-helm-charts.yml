@@ -1,0 +1,55 @@
+name: Publish Helm Charts
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+
+jobs:
+  publish-charts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        chart:
+          - name: runtime-api
+            path: charts/runtime-api
+            repository: openhands-cloud-runtime-api
+          - name: image-loader
+            path: charts/image-loader
+            repository: openhands-cloud-image-loader
+          - name: openhands
+            path: charts/openhands
+            repository: openhands-cloud
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Helm Chart
+        uses: appany/helm-oci-chart-releaser@v0.4.2
+        with:
+          name: ${{ matrix.chart.name }}
+          repository: ${{ matrix.chart.repository }}
+          path: ${{ matrix.chart.path }}
+          registry: ghcr.io/${{ github.repository_owner }}
+          tag: auto
