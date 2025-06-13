@@ -37,7 +37,7 @@ environment-specific values in the example file before using it.
 
 3. Create a secret for your LLM.
 
-We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
+  We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
   ```bash
   kubectl create secret generic litellm-env-secrets -n openhands \
      --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
@@ -92,22 +92,22 @@ We'll assume Anthropic here, but you can set any env vars you'll need to connect
      --from-literal=sandbox-api-key=$GLOBAL_SECRET
    ```
 
-You should now have these secrets in the openhands namespace:
-```bash
-kubectl get secret -n openhands
+  You should now have these secrets in the openhands namespace:
+  ```bash
+  kubectl get secret -n openhands
 
-NAME                  TYPE     DATA   AGE
-clickhouse-password   Opaque   1      13s
-default-api-key       Opaque   1      7s
-jwt-secret            Opaque   1      44s
-langfuse-nextauth     Opaque   1      18s
-langfuse-salt         Opaque   1      23s
-lite-llm-api-key      Opaque   1      28s
-litellm-env-secrets   Opaque   1      2m8s
-postgres-password     Opaque   3      39s
-redis                 Opaque   1      35s
-sandbox-api-key       Opaque   1      3s
-```
+  NAME                  TYPE     DATA   AGE
+  clickhouse-password   Opaque   1      13s
+  default-api-key       Opaque   1      7s
+  jwt-secret            Opaque   1      44s
+  langfuse-nextauth     Opaque   1      18s
+  langfuse-salt         Opaque   1      23s
+  lite-llm-api-key      Opaque   1      28s
+  litellm-env-secrets   Opaque   1      2m8s
+  postgres-password     Opaque   3      39s
+  redis                 Opaque   1      35s
+  sandbox-api-key       Opaque   1      3s
+  ```
 
 ### Install OpenHands
 Now we can install the helm chart.
