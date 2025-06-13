@@ -18,16 +18,20 @@ This Helm chart deploys the complete OpenHands stack, including all required dep
    cd openhands-cloud/charts/openhands
    ```
 
-2. Create a secret for your LLM
+2. Create the openhands namespace:
+   ```bash
+   # Create namespace (if you want to use a different namespace, you will need to change it in all the commands that follow)
+   kubectl create namespace openhands
+   ```
+
+3. Create a secret for your LLM
   ```bash
   kubectl create secret generic litellm-env-secrets -n openhands \
      --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
   ```
 
-3. Create required secrets:
+4. Create required secrets:
    ```bash
-   # Create namespace (if you want to use a different namespace, you will need to change it in all the commands that follow)
-   kubectl create namespace openhands
 
    # For a basic installation, we'll reuse this secret for several components. You can create a different secret for each component if you prefer.
    export GLOBAL_SECRET=`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32`
@@ -70,10 +74,28 @@ This Helm chart deploys the complete OpenHands stack, including all required dep
      --from-literal=sandbox-api-key=$GLOBAL_SECRET
    ```
 
+You should now have these secrets in the openhands namespace:
+```bash
+kubectl get secret -n openhands
+
+NAME                  TYPE     DATA   AGE
+clickhouse-password   Opaque   1      13s
+default-api-key       Opaque   1      7s
+jwt-secret            Opaque   1      44s
+langfuse-nextauth     Opaque   1      18s
+langfuse-salt         Opaque   1      23s
+lite-llm-api-key      Opaque   1      28s
+litellm-env-secrets   Opaque   1      2m8s
+postgres-password     Opaque   3      39s
+redis                 Opaque   1      35s
+sandbox-api-key       Opaque   1      3s
+```
+
 ### Install and Set Up OpenHands
-Now we can install the helm chart:
+Now we can install the helm chart.
 
 ```bash
+helm dependency update
 helm upgrade --install openhands --namespace openhands .
 ```
 
@@ -104,6 +126,33 @@ litellm:
 Finally, upgrade the release:
 ```bash
 helm upgrade --install openhands --namespace openhands . -f my-values.yaml
+```
+
+## Setting up DNS and Ingress
+We recommend traefik as an ingress controller. If you're not using traefik,
+you can set ingress.class in the objects below.
+
+First, enable ingress in your values.yaml:
+```yaml
+ingress:
+  enabled: true
+  host: openhands.example.com
+keycloak:
+  ingress:
+    enabled: true
+    hostname: auth.openhands.example.com
+runtime-api:
+  ingress:
+    enabled: true
+    hostname: runtimes.openhands.example.com
+litellm-helm:
+  ingress:
+    enabled: true
+    hosts:
+    - host: llm-proxy.example.com
+      paths:
+      - path: /
+        pathType: Prefix
 ```
 
 ## Enabling GitHub Authentication
