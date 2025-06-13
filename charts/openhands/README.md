@@ -35,22 +35,25 @@ environment-specific values in the example file before using it.
    kubectl create namespace openhands
    ```
 
-3. Create a secret for your LLM. We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
+3. Create a secret for your LLM.
+
+We'll assume Anthropic here, but you can set any env vars you'll need to connect to your LLM, including e.g. OpenAPI keys, or AWS keys for Bedrock models. You can use any env var names you want--we'll reference them again below in our LiteLLM setup
   ```bash
   kubectl create secret generic litellm-env-secrets -n openhands \
      --from-literal=ANTHROPIC_API_KEY=<your-anthropic-api-key>
   ```
 
 4. Create required secrets:
+   There are several databases and other services that need a secret or admin password to function.
+   We'll create a single `$GLOBAL_SECRET` to drive all of these, but we recommend using
+  [SOPS](https://github.com/getsops/sops) or another solution for managing Kubernetes secrets long-term.
+
    ```bash
 
-   # For a basic installation, we'll reuse this secret for several components. You can create a different secret for each component if you prefer.
    export GLOBAL_SECRET=`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32`
 
-   # Create JWT secret for sessions
    kubectl create secret generic jwt-secret -n openhands --from-literal=jwt-secret=$GLOBAL_SECRET
 
-   # Create Keycloak realm secret
    kubectl create secret generic keycloak-realm -n openhands \
      --from-literal=realm-name=openhands \
      --from-literal=provider-name=email \
@@ -61,37 +64,29 @@ environment-specific values in the example file before using it.
    kubectl create secret generic keycloak-admin -n openhands \
      --from-literal=admin-password=$GLOBAL_SECRET
 
-   # Create PostgreSQL password secret
    kubectl create secret generic postgres-password -n openhands \
      --from-literal=username=postgres \
      --from-literal=password=$GLOBAL_SECRET \
      --from-literal=postgres-password=$GLOBAL_SECRET
 
-   # Create Redis password secret
    kubectl create secret generic redis -n openhands \
      --from-literal=redis-password=$GLOBAL_SECRET
 
-   # Create LiteLLM API key secret
    kubectl create secret generic lite-llm-api-key -n openhands \
      --from-literal=lite-llm-api-key=$GLOBAL_SECRET
 
-   # Create langfuse salt secret
    kubectl create secret generic langfuse-salt -n openhands \
      --from-literal=salt=$GLOBAL_SECRET
 
-   # Create langfuse nextauth secret (for signing JWTs)
    kubectl create secret generic langfuse-nextauth -n openhands \
      --from-literal=nextauth-secret=$GLOBAL_SECRET
 
-   # Create clickhouse password secret
    kubectl create secret generic clickhouse-password -n openhands \
      --from-literal=password=$GLOBAL_SECRET
 
-   # Create two secrets, one that configures runtime-api with a default api key, and another that configures openhands to utilize that api key.
-   # There are two secrets because these two workloads can also run in different clusters/namespaces
+   # TODO: merge these two secrets
    kubectl create secret generic default-api-key -n openhands \
      --from-literal=default-api-key=$GLOBAL_SECRET
-
    kubectl create secret generic sandbox-api-key -n openhands \
      --from-literal=sandbox-api-key=$GLOBAL_SECRET
    ```
