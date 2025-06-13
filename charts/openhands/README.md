@@ -141,6 +141,11 @@ Finally, upgrade the release:
 helm upgrade --install openhands --namespace openhands . -f my-values.yaml
 ```
 
+You should now be able to see OpenHands running with
+```bash
+kubectl port-forward svc/openhands-service 3000:3000
+```
+
 ## Setting up DNS and Ingress
 We recommend traefik as an ingress controller. If you're not using traefik,
 you can set ingress.class in the objects below.
