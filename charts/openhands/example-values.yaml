@@ -1,40 +1,71 @@
+# If you need to update an image prior to release, we will have you uncomment and update the tag value.
+# image:
+#   tag: 0.47.0
+
 env:
   # This var will cause the openhands deploy to create the LLM team name if it doesn't exist already
   LITE_LLM_TEAM_NAME: openhands
+  # replace <your-model> with your LLM model and uncomment this variable
+  # LITELLM_DEFAULT_MODEL: "litellm_proxy/<your-model>"
 
 ingress:
+  enabled: false
   host: "app.example.com"
-  annotations: {}
+  annotations:
+    {}
     # Value should match your Issuer/ClusterIssuer and uncomment if you're using cert-manager for certificates
-    # cert-manager.io/cluster-issuer: letsencrypt-production
+    # cert-manager.io/cluster-issuer: letsencrypt
+
+tls:
+  # requires cert for all enabled ingresses
+  enabled: true
+
+github:
+  # Set this to true if you are using GitHub as your identity provider
+  enabled: false
+
+gitlab:
+  # Set this to true if you are using GitLab as your identity provider
+  enabled: false
+
+bitbucket:
+  # Set this to true if you are using BitBucket as your identity provider
+  enabled: false
 
 keycloak:
-  url: "https://auth.app.example.com"
+  enabled: true
   ingress:
+    enabled: false
     hostname: "auth.app.example.com"
     annotations: {}
     # Value should match your Issuer/ClusterIssuer and uncomment if you're using cert-manager for certificates
-    # cert-manager.io/cluster-issuer: letsencrypt-production
+    # cert-manager.io/cluster-issuer: letsencrypt
 
 litellm:
-  enabled: true
+  # Set this to true if you are using your own litellm instance
+  enabled: false
   url: "https://llm-proxy.example.com"
 
 litellm-helm:
   # Set this to false if you are using your own litellm instance
   enabled: true
   ingress:
+    enabled: false
     hosts:
-    - host: llm-proxy.example.com
-      paths:
-      - path: /
-        pathType: Prefix
+      - host: llm-proxy.example.com
+        paths:
+          - path: /
+            pathType: Prefix
     tls:
-    - secretName: llm-proxy-tls
-      hosts:
-      - llm-proxy.example.com
+      - secretName: llm-proxy-tls
+        hosts:
+          - llm-proxy.example.com
   proxy_config:
-    environment_variables: {"OR_APP_NAME": "OpenHands", "OR_SITE_URL": "https://docs.all-hands.dev"}
+    environment_variables:
+      {
+        "OR_APP_NAME": "OpenHands",
+        "OR_SITE_URL": "https://docs.all-hands.dev",
+      }
     # Needs to be updated with your models. If you bring your own litellm, then just point at that!
     # model_list:
     # - model_name: "prod/claude-3-5-sonnet-20241022"
@@ -47,14 +78,20 @@ litellm-helm:
     #     api_key: os.environ/ANTHROPIC_API_KEY
 
 runtime-api:
+  enabled: true
   ingress:
+    enabled: false
     host: runtime-api.example.com
+    annotations: {}
+    # Value should match your Issuer/ClusterIssuer and uncomment if you're using cert-manager for certificates
+    # cert-manager.io/cluster-issuer: letsencrypt
   env:
     RUNTIME_BASE_URL: "runtime.example.com"
+    # Set to storage class you want to use.
+    STORAGE_CLASS: "gp2"
 
 sandbox:
   apiHostname: https://runtime-api.example.com
-
 # Tavily API for web search functionality (optional)
 # tavily:
 #   enabled: true
