@@ -1,0 +1,77 @@
+# Use https://play.d2lang.com to edit with preview (layout engine ELK)
+# To update the SVG, run: (cd docs && ./build-diagrams.sh)
+
+direction: right
+
+classes: {
+  all-hands: {
+    style: {
+      double-border: true
+    }
+  }
+}
+
+app-cluster: Kubernetes Cluster {
+  openhands: OpenHands {
+    class: all-hands
+  }
+  runtime-api: Runtime API {
+    class: all-hands
+  }
+
+  keycloak: Keycloak
+  postgres: PostgreSQL {
+    shape: cylinder
+  }
+  langfuse: LangFuse
+  litellm: LiteLLM Proxy
+  redis: Redis {
+    shape: cylinder
+  }
+  clickhouse: Clickhouse {
+    shape: cylinder
+  }
+
+  runtimes: Runtimes {
+    class: all-hands
+  }
+  image-loader: Image Loader {
+    class: all-hands
+  }
+}
+convo-bucket: Conversation\n Bucket {
+  shape: cylinder
+}
+llms: AI Language\n Models {
+  shape: cloud
+}
+lb: Load\nBalancer {
+  shape: cloud
+}
+
+lb -> app-cluster.runtimes
+app-cluster.litellm -> llms
+
+lb -> app-cluster.openhands
+lb -> app-cluster.keycloak
+app-cluster.openhands -> app-cluster.runtime-api
+app-cluster.openhands -> app-cluster.keycloak
+app-cluster.openhands -> app-cluster.redis
+app-cluster.openhands -> convo-bucket
+app-cluster.runtime-api -> app-cluster.runtimes
+app-cluster.litellm -> app-cluster.langfuse
+app-cluster.langfuse -> app-cluster.clickhouse
+app-cluster.openhands -> app-cluster.litellm
+
+app-cluster.openhands -> app-cluster.postgres
+app-cluster.litellm -> app-cluster.postgres
+app-cluster.keycloak -> app-cluster.postgres
+app-cluster.runtime-api -> app-cluster.postgres
+
+app-cluster.runtimes -> app-cluster.openhands
+
+app-cluster.runtimes -- app-cluster.image-loader {
+    style: {
+        stroke-dash: 3
+    }
+}
