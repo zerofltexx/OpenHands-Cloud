@@ -137,6 +137,13 @@ ingress:
 integrationEvents:
   deployment:
     replicas: 2
+    resources:
+      requests:
+        memory: 1.5Gi
+        cpu: 1000m
+      limits:
+        memory: 1.5Gi
+        cpu: 1000m
   uvicorn:
     workers: 2
 
