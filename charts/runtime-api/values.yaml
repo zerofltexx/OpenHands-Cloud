@@ -15,6 +15,7 @@ serviceAccount:
   create: true
   name: runtime-api-sa
   annotations: {}
+  createRBAC: true
 
 runtimeInSameCluster: false
 defaultAPIKeySecretName: default-api-key
@@ -180,5 +181,5 @@ monitoring:
   enabled: true
 
 datadog:
-  enabled: true
+  enabled: false
   env: "dev"
