@@ -5,8 +5,10 @@
   value: {{ .Values.appConfig.OPENHANDS_CONFIG_CLS }}
 - name: OPENHANDS_GITHUB_SERVICE_CLS
   value: {{ .Values.appConfig.OPENHANDS_GITHUB_SERVICE_CLS }}
+{{- if .Values.gitlab.enabled }}
 - name: OPENHANDS_GITLAB_SERVICE_CLS
   value: {{ .Values.appConfig.OPENHANDS_GITLAB_SERVICE_CLS }}
+{{- end }}
 {{- if .Values.bitbucket.enabled }}
 - name: OPENHANDS_BITBUCKET_SERVICE_CLS
   value: {{ .Values.appConfig.OPENHANDS_BITBUCKET_SERVICE_CLS }}
@@ -206,6 +208,8 @@
       key: lite-llm-api-key
 {{- end }}
 {{- if index .Values "litellm-helm" "enabled" }}
+- name: LITE_LLM_API_URL
+  value: http://{{ .Release.Name }}-litellm:4000
 - name: LITE_LLM_API_KEY
   valueFrom:
     secretKeyRef:
