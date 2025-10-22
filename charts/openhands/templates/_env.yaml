@@ -11,6 +11,10 @@
 - name: OPENHANDS_BITBUCKET_SERVICE_CLS
   value: {{ .Values.appConfig.OPENHANDS_BITBUCKET_SERVICE_CLS }}
 {{- end }}
+{{- if .Values.azuredevops.enabled }}
+- name: OPENHANDS_AZURE_DEVOPS_SERVICE_CLS
+  value: {{ .Values.appConfig.OPENHANDS_AZURE_DEVOPS_SERVICE_CLS }}
+{{- end }}
 - name: OPENHANDS_MCP_CONFIG_CLS
   value: {{ .Values.appConfig.OPENHANDS_MCP_CONFIG_CLS }}
 - name: OPENHANDS_CONVERSATION_VALIDATOR_CLS
@@ -178,6 +182,18 @@
   valueFrom:
     secretKeyRef:
       name: {{ .Values.bitbucket.auth.existingSecret }}
+      key: client-secret
+{{- end }}
+{{- if .Values.azuredevops.enabled }}
+- name: AZURE_DEVOPS_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.azuredevops.auth.existingSecret }}
+      key: client-id
+- name: AZURE_DEVOPS_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.azuredevops.auth.existingSecret }}
       key: client-secret
 {{- end }}
 {{- if and .Values.litellm.enabled .Values.litellm.useDependentInstall }}

@@ -13,6 +13,7 @@ appConfig:
   OPENHANDS_GITHUB_SERVICE_CLS: "integrations.github.github_service.SaaSGitHubService"
   OPENHANDS_GITLAB_SERVICE_CLS: "integrations.gitlab.gitlab_service.SaaSGitLabService"
   OPENHANDS_BITBUCKET_SERVICE_CLS: "integrations.bitbucket.bitbucket_service.SaaSBitBucketService"
+  OPENHANDS_AZURE_DEVOPS_SERVICE_CLS: "openhands.integrations.azure_devops.azure_devops_service.AzureDevOpsServiceImpl"
   OPENHANDS_MCP_CONFIG_CLS: "server.mcp.mcp_config.SaaSOpenHandsMCPConfig"
   OPENHANDS_EXPERIMENT_MANAGER_CLS: "experiments.experiment_manager.SaaSExperimentManager"
   POSTHOG_CLIENT_KEY: "1234abcd"
@@ -105,6 +106,11 @@ bitbucket:
   enabled: false
   auth:
     existingSecret: bitbucket-app
+
+azuredevops:
+  enabled: false
+  auth:
+    existingSecret: azuredevops-app
 
 gitlabWebhookInstallation:
   enabled: false
